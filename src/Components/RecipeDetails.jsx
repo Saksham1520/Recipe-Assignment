@@ -3,14 +3,19 @@ import React, { useEffect, useState } from "react";
 import { ColorRing } from "react-loader-spinner";
 import { useParams } from "react-router-dom";
 
+const removeHtmlTags = (html) => {
+  return html?.replace(/<\/?[^>]+(>|)/g, "") || "";
+};
+
 function RecipeDetails() {
-  const ingrearr = [1, 2, 3, 4];
   const { id } = useParams();
   const [recipedetails, setRecipeDetails] = useState(null);
-  console.log("Recipe ID:", id);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     const fetchingRecipeDetails = async () => {
       try {
+        setLoading(true);
         const res = await axios.get(
           `https://api.spoonacular.com/recipes/${id}/information?apiKey=848e42f16bf04e818ed21503d293cbc8`
         );
@@ -19,8 +24,10 @@ function RecipeDetails() {
           console.log("Details", res.data);
         }
       } catch (error) {
-        alert(res.data.message);
+        alert(error.response.data.message, "Please try again later");
         console.log(error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchingRecipeDetails();
@@ -28,32 +35,53 @@ function RecipeDetails() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex flex-col md:flex-row items-center justify-between">
-        <div className="md:w-1/2 p-4">
-          <h2 className="text-3xl font-bold mb-2">
-            Dish name bfsdjkjkdskjdfkjsdh
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Nesciunt
-            natus aliquam omnis ipsum! Alias, voluptates, minus labore sunt,
-          </p>
+      {loading ? (
+        <div className="flex justify-center items-center h-screen">
+          {" "}
+          <ColorRing />
+        </div>
+      ) : (
+        <div className="container mx-auto p-4">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <div className="md:w-1/2 p-4">
+              <h2 className="text-3xl font-bold mb-2">
+                {recipedetails?.title}
+              </h2>
+              <p className="text-gray-600 mb-4">
+                {removeHtmlTags(recipedetails?.summary)}
+              </p>
 
-          <h3 className="text-xl font-semibold mb-2">Ingredients:</h3>
-          <ul className="list-disc ml-6">
-            {ingrearr.map((ingredient, index) => (
-              <li key={index} className="text-gray-700">
-                {ingredient}
-              </li>
-            ))}
-          </ul>
+              <h3 className="text-xl font-semibold mb-2">
+                Steps and Ingredients:
+              </h3>
+              <ul className="list-disc ml-6">
+                {recipedetails?.analyzedInstructions[0]?.steps?.map((steps) => (
+                  <p key={steps.number}>
+                    <span className="font-semibold">{steps.number + ")."}</span>{" "}
+                    {steps.step} <br />{" "}
+                    <h4 className="font-semibold ">Ingredients used:</h4>
+                    {steps.ingredients.map((items, index) => {
+                      return (
+                        <>
+                          <span key={`${steps.number}-${index}`} className="">
+                            {items.name + ","}
+                          </span>
+                        </>
+                      );
+                    })}
+                  </p>
+                ))}
+              </ul>
+            </div>
+            <div className="md:w-1/2 p-4 flex items- justify-center">
+              <img
+                src={recipedetails?.image}
+                className="w-[75%] h-auto rounded-lg shadow-lg"
+              />
+            </div>
+          </div>
         </div>
-        <div className="md:w-1/2 p-4">
-          <img
-            src={recipedetails?.image}
-            className="w-[50%] h-auto rounded-lg shadow-lg"
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 }
